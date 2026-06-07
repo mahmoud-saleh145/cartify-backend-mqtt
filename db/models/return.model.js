@@ -1,21 +1,21 @@
 import { Schema, model } from 'mongoose';
 
 /**
- * ReturnRequest — one document per return request raised by a user.
+ * ReturnRequest — one document per return request.
  *
- * Lifecycle:
- *   pending  → box scans code → completed
- *                             → expired  (TTL or manual)
- *                             → denied
+ * Lifecycle:  pending → completed | expired | denied
+ *
+ * Locker unlock:
+ *   lockerUserId  — 6-digit numeric, shown to user, entered at locker
+ *   unlockCode    — 4-digit numeric, shown to user, entered at locker
+ *                   (regenerated daily server-side from lockerUserId + date + secret)
  */
 const returnSchema = new Schema(
   {
-    // ── Who / What ────────────────────────────────────────────────────────────
-    userId:    { type: Schema.Types.ObjectId, ref: 'user',    default: null },
-    orderId:   { type: Schema.Types.ObjectId, ref: 'order',   default: null },
+    userId:    { type: Schema.Types.ObjectId, ref: 'user',  default: null },
+    orderId:   { type: Schema.Types.ObjectId, ref: 'order', default: null },
     sessionId: { type: String, default: null },
 
-    // ── Items being returned ──────────────────────────────────────────────────
     items: [
       {
         _id:       false,
@@ -26,32 +26,28 @@ const returnSchema = new Schema(
       },
     ],
 
-    // ── Return reason (matches frontend chips) ────────────────────────────────
     reason: {
-      type: String,
-      enum: ['defective', 'wrong_size', 'changed_mind', 'wrong_item', 'other'],
+      type:     String,
+      enum:     ['defective', 'wrong_size', 'changed_mind', 'wrong_item', 'other'],
       required: true,
     },
     notes: { type: String, trim: true, maxlength: 1000 },
 
-    // ── Short code sent to the user — validated by the physical box ───────────
-    code: {
+    // ── Locker identification (replaces MQTT code) ────────────────────────
+    lockerUserId: {
       type:     String,
       required: true,
-      unique:   true,
-      uppercase: true,
-      trim:     true,
-      index:    true,         // hot lookup path — MQTT hits this on every scan
+      index:    true,       // lookup by user when validating at locker
     },
+    // unlockCode is NOT stored — it is deterministically regenerated each
+    // time it is needed (generateLockerCode(lockerUserId)). This means:
+    //   • it changes daily automatically
+    //   • compromising the DB does not expose working codes
+    // We store the creation date so we can regenerate the code for display.
+    codeGeneratedAt: { type: Date, default: Date.now },
 
-    // ── Validity window ───────────────────────────────────────────────────────
-    expiresAt: {
-      type:     Date,
-      required: true,
-      index:    true,
-    },
+    expiresAt: { type: Date, required: true, index: true },
 
-    // ── Status ────────────────────────────────────────────────────────────────
     status: {
       type:    String,
       enum:    ['pending', 'completed', 'expired', 'denied'],
@@ -59,14 +55,12 @@ const returnSchema = new Schema(
       index:   true,
     },
 
-    // ── Which physical box processed the return ───────────────────────────────
     processedByBox: { type: String, default: null },
     completedAt:    { type: Date,   default: null },
   },
   { timestamps: true }
 );
 
-// Compound index — MQTT handler queries by code AND status together
-returnSchema.index({ code: 1, status: 1 });
+returnSchema.index({ lockerUserId: 1, status: 1 });
 
 export default model('return', returnSchema);
