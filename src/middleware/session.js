@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
 export const attachSession = (req, res, next) => {
-  console.log("COOKIES:", req.cookies);
+
   if (req.user) {
     return next();
   } else {
@@ -14,9 +14,8 @@ export const attachSession = (req, res, next) => {
       res.cookie('sessionId', newSession, {
         httpOnly: true,
         maxAge: SEVEN_DAYS,
-        // secure: process.env.NODE_ENV === 'production',
-        secure: 'none',
-        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         path: '/',
       });
       console.log("🟢 Created new sessionId:", newSession);
@@ -27,7 +26,6 @@ export const attachSession = (req, res, next) => {
       req.sessionId = existingSession;
     }
   }
-
   next();
 };
 
