@@ -1,70 +1,105 @@
-/**
- * Cartify — Smart Locker Code Generator
- *
- * Algorithm:
- *   input  = "YYYYMMDD:userId:SECRET_KEY"
- *   hash   = SHA-256(input)
- *   code   = (parseInt(hash[0..7], 16) % 9000) + 1000   → always 4 digits
- *
- * Daily-rotating. Per-user unique. Offline-compatible.
- * Secret key NEVER sent to frontend.
- */
 
-import { createHash } from 'crypto';
+const SECRET_KEY = 146818;
 
 /**
- * Return today's date as YYYYMMDD (UTC).
+ * format: DDMM (ex: 13 June → 1306)
  */
-function todayUTC() {
-  return new Date().toISOString().slice(0, 10).replace(/-/g, '');
+export function getDayCode(date = new Date()) {
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  return parseInt(day + month); // 1306
 }
 
-/**
- * Return yesterday's date as YYYYMMDD (UTC) — used as fallback validation window.
- */
-function yesterdayUTC() {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() - 1);
-  return d.toISOString().slice(0, 10).replace(/-/g, '');
+export function generateLockerCode(userId, date = new Date()) {
+  const n = Number(userId);
+  const day = getDayCode(date);
+
+  const raw =
+    (((n ^ SECRET_KEY) + day) % 9000);
+
+  return String(raw + 1000);
 }
 
-/**
- * Generate the 4-digit locker unlock code for a given userId and date.
- *
- * @param {string} userId   — the numeric userId stored on the return request
- * @param {string} [dateStr] — YYYYMMDD; defaults to today UTC
- * @returns {string}         — exactly 4 digits, e.g. "4821"
- */
-export function generateLockerCode(userId, dateStr = null) {
-  const key    = process.env.LOCKER_SECRET_KEY;
-  if (!key)    throw new Error('LOCKER_SECRET_KEY is not set in environment');
-  const date   = dateStr || todayUTC();
-  const input  = `${date}:${String(userId)}:${key}`;
-  const hash   = createHash('sha256').update(input, 'utf8').digest('hex');
-  const raw    = parseInt(hash.substring(0, 8), 16);   // first 4 bytes → uint32
-  const code   = (raw % 9000) + 1000;                  // 1000–9999
-  return String(code);
-}
 
-/**
- * Validate an entered code against today + yesterday (48-hour window).
- *
- * @param {string} userId
- * @param {string} enteredCode
- * @returns {boolean}
- */
-export function validateLockerCode(userId, enteredCode) {
-  if (!enteredCode || typeof enteredCode !== 'string') return false;
+export function validateLockerCode(userId, enteredCode, date = new Date()) {
   return (
-    enteredCode === generateLockerCode(userId, todayUTC()) ||
-    enteredCode === generateLockerCode(userId, yesterdayUTC())
+    String(enteredCode) === generateLockerCode(userId, date)
   );
 }
 
-/**
- * Generate a random 6-digit numeric user ID for a return request.
- * Simple, user-friendly, not a security secret.
- */
+
 export function generateLockerUserId() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
+
+
+
+
+
+// #include < Wire.h >
+//   #include "RTClib.h"
+
+// RTC_DS3231 rtc;
+
+// // نفس السر اللي في السيرفر
+// const long SECRET_KEY = 146818;
+
+// // تحويل التاريخ إلى رقم (DDMM)
+// int getDayCode(int day, int month) {
+//   return (day * 100) + month;
+// }
+
+// // نفس المعادلة بتاعة السيرفر
+// int generateLockerCode(long userId, int day, int month) {
+//   long dayCode = getDayCode(day, month);
+
+//   long raw = ((userId ^ SECRET_KEY) + dayCode) % 9000;
+
+//   return (raw + 1000);
+// }
+
+// void setup() {
+//   Serial.begin(9600);
+
+//   if (!rtc.begin()) {
+//     Serial.println("RTC not found");
+//     while (1);
+//   }
+
+//   // لو الساعة مش متظبطة أول مرة فقط
+//   // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+
+//   Serial.println("System Ready");
+// }
+
+// void loop() {
+
+//   // مثال: إدخال يدوي (بدل keypad / serial / RFID)
+//   long userId = 567564;
+//   int enteredCode = 2696;
+
+//   DateTime now = rtc.now();
+
+//   int day = now.day();
+//   int month = now.month();
+
+//   int expectedCode = generateLockerCode(userId, day, month);
+
+//   Serial.print("Today: ");
+//   Serial.print(day);
+//   Serial.print("/");
+//   Serial.println(month);
+
+//   Serial.print("Expected Code: ");
+//   Serial.println(expectedCode);
+
+//   if (enteredCode == expectedCode) {
+//     Serial.println("ACCESS GRANTED - OPEN LOCKER");
+//     // digitalWrite(RELAY_PIN, HIGH);
+//   } else {
+//     Serial.println("ACCESS DENIED");
+//     // digitalWrite(RELAY_PIN, LOW);
+//   }
+
+//   delay(5000); // إعادة المحاولة كل 5 ثواني
+// }
