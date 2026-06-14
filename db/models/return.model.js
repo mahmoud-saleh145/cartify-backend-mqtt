@@ -15,7 +15,10 @@ const returnSchema = new Schema(
         quantity: { type: Number, required: true, min: 1 },
       },
     ],
-
+    weight: {
+      type: Number,
+      default: null,
+    },
     reason: {
       type: String,
       enum: ['defective', 'wrong_size', 'changed_mind', 'wrong_item', 'other'],
