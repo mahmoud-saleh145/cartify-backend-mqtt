@@ -11,10 +11,10 @@ const router = Router();
 // express.raw() is applied in index.js for this route so raw bodies arrive
 // as a Buffer. Multer handles multipart internally inside the controller.
 router.post('/upload', deviceAuth, CC.uploadImage);
+router.get('/next-return', CC.getNextReturn);
 
 // ── Admin endpoints ───────────────────────────────────────────────────────────
 router.use(protectRoute, adminOnly);
-router.get('/next-return', CC.getNextReturn);
 router.get('/sessions', CC.listSessions);
 router.get('/session/:id', ...mongoIdParam('id'), validate, CC.getSession);
 router.get('/return/:returnId', ...mongoIdParam('returnId'), validate, CC.getSessionByReturn);
