@@ -32,6 +32,12 @@ const returnSchema = new Schema(
       trim: true,
       index: true,
     },
+    unlockCode: {
+      type: String,
+      required: true,
+      trim: true,
+      index: true,
+    },
 
     expiresAt: { type: Date, required: true, index: true },
 

@@ -49,12 +49,16 @@ export const createReturn = asyncHandler(async (req, res) => {
       }
     });
   }
+  // Generate today's unlock code to return to the client
+  // (regenerated fresh each call — daily rotation is automatic)
+  const unlockCode = generateLockerCode(lockerUserId);
 
   const returnRequest = await returnModel.create({
     userId: req.user?._id || null,
     sessionId: req.sessionId || null,
     orderId: orderId || null,
     items,
+    unlockCode,
     reason,
     notes: notes || '',
     lockerUserId,
@@ -73,9 +77,7 @@ export const createReturn = asyncHandler(async (req, res) => {
     });
     await ord.save();
   }
-  // Generate today's unlock code to return to the client
-  // (regenerated fresh each call — daily rotation is automatic)
-  const unlockCode = generateLockerCode(lockerUserId);
+
 
   sendSuccess(res, 201, 'success', {
     returnRequest: {
