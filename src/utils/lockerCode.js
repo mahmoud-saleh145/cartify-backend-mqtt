@@ -1,5 +1,5 @@
 
-const SECRET_KEY = 146818;
+const SECRET_KEY = 1468;
 
 /**
  * format: DDMM (ex: 13 June → 1306)
@@ -7,17 +7,25 @@ const SECRET_KEY = 146818;
 export function getDayCode(date = new Date()) {
   const day = String(date.getUTCDate()).padStart(2, '0');
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-  return parseInt(day + month); // 1306
-}
+  console.log("day", day);
 
+  return parseInt(day); // 1306
+
+}
+// 13
 export function generateLockerCode(userId, date = new Date()) {
   const n = Number(userId);
   const day = getDayCode(date);
 
-  const raw =
-    (((n ^ SECRET_KEY) + day) % 9000);
+  // const raw =
+  //   (((n ^ SECRET_KEY) + day) % 9000);
 
-  return String(raw + 1000);
+  // return String(raw + 1000);
+
+  console.log("userId", n);
+  console.log("secret", SECRET_KEY);
+  console.log("day", day);
+  return n + SECRET_KEY + day; // For testing only (no modulo, no offset)
 }
 
 
@@ -29,7 +37,7 @@ export function validateLockerCode(userId, enteredCode, date = new Date()) {
 
 
 export function generateLockerUserId() {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return String(Math.floor(1000 + Math.random() * 9000));
 }
 
 

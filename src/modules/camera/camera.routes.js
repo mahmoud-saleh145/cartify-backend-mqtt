@@ -1,41 +1,22 @@
-/**
- * src/modules/camera/camera.routes.js
- *
- * Route layout:
- *
- *   Hardware-facing (device auth only):
- *     POST /camera/session/start   — box signals recording start
- *     POST /camera/upload          — box sends video file
- *
- *   Admin-facing (admin JWT required):
- *     GET  /camera/sessions        — list all recordings
- *     GET  /camera/session/:id     — single session detail
- *     GET  /camera/return/:returnId — recording for a return
- *     DELETE /camera/session/:id   — remove a recording
- */
-
-import { Router }     from 'express';
+import { Router } from 'express';
 import { deviceAuth } from '../../middleware/deviceAuth.js';
 import { protectRoute, adminOnly } from '../../middleware/auth.js';
-import { validate, mongoIdParam }  from '../../middleware/validation.js';
+import { validate, mongoIdParam } from '../../middleware/validation.js';
 import * as CC from './camera.controller.js';
 
 const router = Router();
 
-// ── Hardware endpoints ────────────────────────────────────────────────────────
-// These use deviceAuth instead of JWT — no user login needed.
-// Rate-limited separately in index.js (see integration section below).
-
-router.post('/session/start', deviceAuth, CC.startSession);
-router.post('/upload',        deviceAuth, CC.uploadVideo);
-// NOTE: /upload does NOT use express.json() body parsing — multer handles it.
-// The multer middleware is applied INSIDE the controller via handleVideoUpload().
+// ── Hardware endpoint ─────────────────────────────────────────────────────────
+// Accepts both multipart/form-data and raw image/jpeg bodies.
+// express.raw() is applied in index.js for this route so raw bodies arrive
+// as a Buffer. Multer handles multipart internally inside the controller.
+router.post('/upload', deviceAuth, CC.uploadImage);
 
 // ── Admin endpoints ───────────────────────────────────────────────────────────
 router.use(protectRoute, adminOnly);
-
-router.get('/sessions',                             CC.listSessions);
-router.get('/session/:id',   ...mongoIdParam('id'), validate, CC.getSession);
+router.get('/next-return', CC.getNextReturn);
+router.get('/sessions', CC.listSessions);
+router.get('/session/:id', ...mongoIdParam('id'), validate, CC.getSession);
 router.get('/return/:returnId', ...mongoIdParam('returnId'), validate, CC.getSessionByReturn);
 router.delete('/session/:id', ...mongoIdParam('id'), validate, CC.deleteSession);
 
