@@ -3,6 +3,7 @@ import connectToDB from '../../../db/connectionDB.js';
 import { AppError, asyncHandler } from '../../utils/error.js';
 import { sendSuccess } from '../../utils/response.js';
 import { generateLockerCode, generateLockerUserId } from '../../utils/lockerCode.js';
+import orderModel from '../../../db/models/order.model.js';
 
 /** Return requests are valid for 48 hours */
 const CODE_TTL_MS = 48 * 60 * 60 * 1000;
@@ -18,7 +19,36 @@ export const createReturn = asyncHandler(async (req, res) => {
     lockerUserId = generateLockerUserId();
   }
 
+
   const expiresAt = new Date(Date.now() + CODE_TTL_MS);
+
+  const existingReturn = await returnModel.findOne({
+    orderId,
+    status: 'pending',
+  });
+  if (existingReturn) {
+    existingReturn.items.push(...items);
+
+    await existingReturn.save();
+    const unlockCode = generateLockerCode(existingReturn.lockerUserId);
+
+    const ord = await orderModel.findById(orderId);
+
+    if (ord) {
+      ord.products.forEach(product => {
+        if (product.productId.toString() === items[0].productId.toString()) {
+          product.isRefundRequested = true;
+        }
+      });
+      await ord.save();
+    }
+    return sendSuccess(res, 200, 'already exists', {
+      returnRequest: {
+        ...existingReturn.toObject(),
+        unlockCode
+      }
+    });
+  }
 
   const returnRequest = await returnModel.create({
     userId: req.user?._id || null,
@@ -33,6 +63,16 @@ export const createReturn = asyncHandler(async (req, res) => {
     status: 'pending',
   });
 
+  const ord = await orderModel.findById(orderId);
+
+  if (ord) {
+    ord.products.forEach(product => {
+      if (product.productId.toString() === items[0].productId.toString()) {
+        product.isRefundRequested = true;
+      }
+    });
+    await ord.save();
+  }
   // Generate today's unlock code to return to the client
   // (regenerated fresh each call — daily rotation is automatic)
   const unlockCode = generateLockerCode(lockerUserId);

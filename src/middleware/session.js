@@ -5,6 +5,7 @@ const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 export const attachSession = (req, res, next) => {
 
   if (req.user) {
+    req.sessionId = null;
     return next();
   } else {
 
