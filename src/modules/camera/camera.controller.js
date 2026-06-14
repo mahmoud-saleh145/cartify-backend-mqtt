@@ -41,7 +41,7 @@ export const uploadImage = asyncHandler(async (req, res, next) => {
   let firmwareVersion;
 
   const contentType = req.headers['content-type'] || '';
-
+  const weight = req.headers['x-weight'];
   if (contentType.includes('multipart/form-data')) {
     // ── Multipart upload (preferred) ─────────────────────────────────────────
     try {
@@ -94,6 +94,7 @@ export const uploadImage = asyncHandler(async (req, res, next) => {
   const session = await cameraSessionModel.create({
     returnId,
     boxId,
+    weight: weight ? Number(weight) : null,
     status: 'uploading',
     capturedAt: new Date(),
     attemptNumber,
@@ -128,6 +129,7 @@ export const uploadImage = asyncHandler(async (req, res, next) => {
       imageUrl: cloudResult.url,
       imageSessionId: session._id,
       imageUploadedAt: new Date(),
+      weight: weight ? Number(weight) : null,
     },
   });
 

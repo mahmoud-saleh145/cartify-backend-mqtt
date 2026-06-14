@@ -22,6 +22,10 @@ const cameraSessionSchema = new Schema(
       default: 'uploading',
       index: true,
     },
+    weight: {
+      type: Number,
+      default: null,
+    },
 
     // Image asset
     imageUrl: { type: String, trim: true },
