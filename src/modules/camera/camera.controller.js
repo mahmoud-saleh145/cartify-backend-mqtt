@@ -217,6 +217,7 @@ export const deleteSession = asyncHandler(async (req, res, next) => {
 
 
 export const getNextReturn = async (req, res) => {
+  await connectToDB();
   const { boxId } = req.query;
 
   if (!boxId) {
