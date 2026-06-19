@@ -214,8 +214,6 @@ export const deleteSession = asyncHandler(async (req, res, next) => {
   sendSuccess(res, 200, 'success', { message: 'Session deleted' });
 });
 
-
-
 export const getNextReturn = async (req, res) => {
   await connectToDB();
   const { boxId } = req.query;
@@ -226,7 +224,7 @@ export const getNextReturn = async (req, res) => {
 
   const nextReturn = await returnModel
     .findOne({ status: 'pending' })
-    .sort({ createdAt: 1 });
+    .sort({ createdAt: -1 });
 
   if (!nextReturn) {
     return res.status(404).json({ msg: 'No pending returns' });

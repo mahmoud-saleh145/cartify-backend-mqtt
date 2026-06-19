@@ -26,3 +26,4 @@ export const deviceAuth = (req, res, next) => {
   req.boxId = boxId.trim();
   next();
 };
+

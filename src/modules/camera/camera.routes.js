@@ -10,8 +10,12 @@ const router = Router();
 // Accepts both multipart/form-data and raw image/jpeg bodies.
 // express.raw() is applied in index.js for this route so raw bodies arrive
 // as a Buffer. Multer handles multipart internally inside the controller.
-router.post('/upload', deviceAuth, CC.uploadImage);
-router.get('/next-return', CC.getNextReturn);
+router.post('/upload', (req, res, next) => {
+    console.log("CAMERA REQUEST ARRIVED");
+    console.log(req.method);
+    console.log(req.headers);
+    next();
+}, deviceAuth, CC.uploadImage); router.get('/next-return', CC.getNextReturn);
 
 // ── Admin endpoints ───────────────────────────────────────────────────────────
 router.use(protectRoute, adminOnly);
