@@ -17,14 +17,7 @@ export function generateLockerCode(userId, date = new Date()) {
   const n = Number(userId);
   const day = getDayCode(date);
 
-  // const raw =
-  //   (((n ^ SECRET_KEY) + day) % 9000);
 
-  // return String(raw + 1000);
-
-  console.log("userId", n);
-  console.log("secret", SECRET_KEY);
-  console.log("day", day);
   return n + SECRET_KEY + day; // For testing only (no modulo, no offset)
 }
 
@@ -37,7 +30,7 @@ export function validateLockerCode(userId, enteredCode, date = new Date()) {
 
 
 export function generateLockerUserId() {
-  return String(Math.floor(1000 + Math.random() * 9000));
+  return String(Math.floor(100 + Math.random() * 900));
 }
 
 
