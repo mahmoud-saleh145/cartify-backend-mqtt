@@ -9,10 +9,8 @@ const connectToDB = async () => {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
-    const uri =
-      process.env.NODE_ENV === 'production'
-        ? process.env.DB_URL_ONLINE
-        : process.env.DB_URL || process.env.DB_URL_ONLINE;
+    const uri = process.env.DB_URL
+
 
     cached.promise = mongoose
       .connect(uri, { serverSelectionTimeoutMS: 10000 })
